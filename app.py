@@ -7,10 +7,10 @@ import pandas as pd
 
 
 app = Flask(__name__)
-app.config["TEMP"] = "/Users/gaoyuan/My_Repo/openDRG/DRG_Python/tem"
-app.config["weight_file"] = "/Users/gaoyuan/My_Repo/openDRG/DRG_Python/tem/DRG_weights.csv"
-app.config["drg10_file"] = "/Users/gaoyuan/My_Repo/openDRG/DRG_Python/tem/drg10.csv"
-app.config["drg9_file"] = "/Users/gaoyuan/My_Repo/openDRG/DRG_Python/tem/drg9.csv"
+app.config["TEMP"] = "./tem"
+app.config["weight_file"] = "./tem/DRG_weights.csv"
+app.config["drg10_file"] = "./tem/drg10.csv"
+app.config["drg9_file"] = "./tem/drg9.csv"
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 
