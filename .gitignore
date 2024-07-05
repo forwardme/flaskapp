@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+csv_modefied.csv
+ICD9_v2.0.csv
+ICD10_v2.0.csv
+*.ipynb
+try*.py
+main.py
+.DS_Store
