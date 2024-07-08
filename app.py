@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, flash, redirect, session
-from backend import MakeRecord, vbv2csv,DRG_weights_tuple, cross_merge, get_drg10_dict, get_drg9_dict
+from backend import MakeRecord, vbv2csv, cross_merge, WEIGHT_TUPLE, DRG10_DIC, DRG9_DIC, get_icd10_yibao, get_icd9_yibao
 from drg_group.chs_drg_11.GroupProxy import GroupProxy
 
 import csv, os
@@ -8,9 +8,6 @@ import pandas as pd
 
 app = Flask(__name__)
 app.config["TEMP"] = "./tem"
-app.config["weight_file"] = "./tem/DRG_weights.csv"
-app.config["drg10_file"] = "./tem/drg10.csv"
-app.config["drg9_file"] = "./tem/drg9.csv"
 app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 
@@ -61,20 +58,25 @@ def grouping():
     if request.method == "POST":
         dias = request.form.get("diagnosis")
         opers = request.form.get("operation")
-        
+
         # if separation is "|" , reconstruct the string with separation ","
         if "|" in dias:
             dias = vbv2csv(dias)
         if "|" in opers:
             opers = vbv2csv(opers)
 
+        # 如果输入为ICD国临版，将其转换为ICD医保版编码
+        dias_list = dias.split(",")
+        opers_list = opers.split(",")
+        dias = ",".join([get_icd10_yibao(dia) for dia in dias_list])
+        opers  = ",".join([get_icd9_yibao(oper) for oper in opers_list])
+
         record = MakeRecord(zdList = dias, ssList = opers).getrecord()
         grouper = GroupProxy()
         result = grouper.group(record)
 
-        weight_turple = DRG_weights_tuple(app.config["weight_file"])
     
-        return render_template("grouping.html", data = result._asdict(), weight = weight_turple[result.drg])
+        return render_template("grouping.html", data = result._asdict(), weight = WEIGHT_TUPLE[result.drg])
     return render_template("grouping.html")
 
 @app.route("/combinations", methods = ["GET", "POST"])
@@ -82,19 +84,16 @@ def combinations():
     dias = request.form.get("diagnosis")
     opers = request.form.get("operation")
 
-    # data = {"diagnosis": dia, "operations": oper}
 
     cross_data = cross_merge(dias, opers)
     grouper = GroupProxy()
-    weight_turple = DRG_weights_tuple(app.config["weight_file"])
-    drg10_dict = get_drg10_dict(app.config["drg10_file"])
-    drg9_dict = get_drg9_dict(app.config["drg9_file"])
+
 
     data = []
     for _, value in cross_data.iterrows():
         record = MakeRecord(zdList=value.diagnosis_all, ssList=value.operations_all).getrecord()
         result = grouper.group(record)
-        res = {"main_diagnosis": value.diagnosis, "diag_name": drg10_dict.get(value.diagnosis), "main_operation": value.operation, "oper_name": drg9_dict.get(value.operation) ,"grouping_message": result, "weight": weight_turple[result.drg]}
+        res = {"main_diagnosis": value.diagnosis, "diag_name": DRG10_DIC.get(value.diagnosis), "main_operation": value.operation, "oper_name": DRG9_DIC.get(value.operation) ,"grouping_message": result, "weight": WEIGHT_TUPLE[result.drg]}
         data.append(res)
 
     return render_template("combinations.html", data = data)
